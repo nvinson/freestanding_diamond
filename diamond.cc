@@ -15,12 +15,13 @@
  * limitations under the License.
  */
 
-#define STDIN_FILENO 0
-#define STDOUT_FILENO 1
-#define STDERR_FILENO 2
+constexpr int STDIN_FILENO = 0;
+constexpr int STDOUT_FILENO = 1;
+constexpr int STDERR_FILENO = 2;
 
-#define MAX_WIDTH 256
-#define STRINGIFY(x) #x
+#define MAX_WIDTH_ 256
+#define STRINGIFY(x) XSTRINGIFY(x)
+#define XSTRINGIFY(x) #x
 
 #ifdef __LP64__
 typedef long ssize_t;
@@ -30,6 +31,9 @@ typedef unsigned long uintptr_t;
 #else
 # error "Only LP64 supported"
 #endif
+
+constexpr size_t MAX_WIDTH = MAX_WIDTH_;
+constexpr const char MAX_WIDTH_STR[] = STRINGIFY(MAX_WIDTH_);
 
 extern "C" {
     int main(int, char **);
@@ -58,9 +62,14 @@ size_t strlen(const char *s) {
 }
 
 int error(const char *app_name) {
-    write(STDOUT_FILENO, "Usage: ", 7);
+    constexpr char usage[] = "Usage: ";
+    constexpr char exp_text_prefix[] = " N where 1 <= N <= ";
+
+    write(STDOUT_FILENO, usage, sizeof(usage) - 1);
     write(STDOUT_FILENO, app_name, strlen(app_name));
-    write(STDOUT_FILENO, " N where 1 <= N <= " STRINGIFY(MAX_WIDTH) "\n", 23);
+    write(STDOUT_FILENO, exp_text_prefix, sizeof(exp_text_prefix) - 1);
+    write(STDOUT_FILENO, MAX_WIDTH_STR, sizeof(MAX_WIDTH_STR) - 1);
+    write(STDOUT_FILENO, "\n", 1);
 
     return 1;
 }
