@@ -144,7 +144,7 @@ int main(int argc, char **argv) {
         write(STDOUT_FILENO, star_buf + i, buf_len - i);
     }
 
-    for (int i = (n & 1) << 1; i <= buf_len; i += 2) {
+    for (int i = (n & 1) << 1; i < buf_len; i += 2) {
         write(STDOUT_FILENO, ws_buf , i / 2);
         write(STDOUT_FILENO, star_buf + i, buf_len - i);
     }
