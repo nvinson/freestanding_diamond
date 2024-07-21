@@ -15,69 +15,23 @@
  * limitations under the License.
  */
 
-constexpr int STDIN_FILENO = 0;
-constexpr int STDOUT_FILENO = 1;
-constexpr int STDERR_FILENO = 2;
+#include<iostream>
+#include<print>
+#include<ranges>
+#include<string>
+#include<vector>
 
-#define MAX_WIDTH_ 256
-#define STRINGIFY(x) XSTRINGIFY(x)
-#define XSTRINGIFY(x) #x
+constexpr int MAX_WIDTH = 256;
 
-#ifdef __LP64__
-typedef long ssize_t;
-typedef unsigned long size_t;
-typedef long intptr_t;
-typedef unsigned long uintptr_t;
-#else
-# error "Only LP64 supported"
-#endif
-
-constexpr size_t MAX_WIDTH = MAX_WIDTH_;
-constexpr const char MAX_WIDTH_STR[] = STRINGIFY(MAX_WIDTH_);
-
-extern "C" {
-    int main(int, char **);
-    [[ noreturn ]] void exit_group(int);
-    [[ noreturn ]] void _start();
-    ssize_t write(int, const char *, size_t);
-    void *memset(void *, int, size_t);
-    void __stack_chk_fail(void);
-}
-
-void __stack_chk_fail(void) {
-    exit_group(255);
-}
-
-void *memset(void *s, int c, size_t n) {
-    for (int i = 0; i < n; i++) {
-        ((char *)s)[i] = c;
-    }
-    return s;
-}
-
-size_t strlen(const char *s) {
-    const char *t = s;
-    while (*t++) ;
-    return t - s;
-}
-
-int error(const char *app_name) {
-    constexpr char usage[] = "Usage: ";
-    constexpr char exp_text_prefix[] = " N where 1 <= N <= ";
-
-    write(STDOUT_FILENO, usage, sizeof(usage) - 1);
-    write(STDOUT_FILENO, app_name, strlen(app_name));
-    write(STDOUT_FILENO, exp_text_prefix, sizeof(exp_text_prefix) - 1);
-    write(STDOUT_FILENO, MAX_WIDTH_STR, sizeof(MAX_WIDTH_STR) - 1);
-    write(STDOUT_FILENO, "\n", 1);
-
+int error(std::string_view app_name) {
+    std::print(std::cerr, "Usage: {} N where 1 <= N <= {}\n", app_name, MAX_WIDTH);
     return 1;
 }
 
-int parse_n(unsigned int &n, const char *s) {
+int parse_n(unsigned int &n, std::string_view s) {
     int state = 0;
     n = 0;
-    while (char c = *s++) {
+    for (auto c : s) {
         switch(c) {
         case '+':
             if (state == 0) {
@@ -125,28 +79,29 @@ int main(int argc, char **argv) {
         return error(argv[0]);
     }
 
-    int buf_len = n + (n & 1);
+    int buf_len = n + !(n & 1);
 
-    char star_buf[MAX_WIDTH];
-    char ws_buf[MAX_WIDTH];
+    std::vector<char> star_buf(buf_len, '*');
+    std::vector<char> ws_buf(buf_len >> 1, ' ');
 
-    for (int i = 0; i < buf_len - 1; i++) {
-        star_buf[i] = '*';
-    }
-    star_buf[buf_len - 1] = '\n';
-
-    for (int i = 0; i < buf_len - 1; i++) {
-        ws_buf[i] = ' ';
-    }
-
-    for (int i = buf_len - 2; i >= 0; i -= 2) {
-        write(STDOUT_FILENO, ws_buf , i / 2);
-        write(STDOUT_FILENO, star_buf + i, buf_len - i);
+    for (auto i = buf_len - 1 - !(n & 1); i >= 0; i -= 2) {
+        for (auto v : std::ranges::drop_view(ws_buf, (buf_len >> 1) - i / 2)) {
+            std::cout << v;
+        }
+        for (auto v : std::ranges::drop_view(star_buf, i + !(n & 1))) {
+            std::cout << v;
+        }
+        std::cout << '\n';
     }
 
-    for (int i = (n & 1) << 1; i < buf_len; i += 2) {
-        write(STDOUT_FILENO, ws_buf , i / 2);
-        write(STDOUT_FILENO, star_buf + i, buf_len - i);
+    for (auto i = 2; i < buf_len; i += 2) {
+        for (auto v : std::ranges::drop_view(ws_buf, (buf_len >> 1) + !(n & 1) - i / 2)) {
+            std::cout << v;
+        }
+        for (auto v : std::ranges::drop_view(star_buf, i)) {
+            std::cout << v;
+        }
+        std::cout << '\n';
     }
     return 0;
 }
